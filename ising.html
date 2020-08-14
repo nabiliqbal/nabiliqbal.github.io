@@ -1,0 +1,235 @@
+
+<!DOCTYPE html><html lang="en"><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.min.js"></script>
+
+    <meta charset="utf-8">
+
+  <base href="https://editor.p5js.org/nabil.iqbal/present/nBjgwmI92/"><style>
+html, body {
+  margin: 0;
+  padding: 0;
+}
+canvas {
+  display: block;
+}
+</style></head>
+  <body>
+    <script>// ok, this is the 2d ising script but with the extra thing that you can use your voice to change them
+
+let mic
+
+// width and size of grid
+var tile_width = 25;
+var L = 30;
+
+// these are variables that we use to zoom in and out of the whole thing
+//var scale = 1;
+var xOffset = 0;
+var yOffset = 0;
+var batch = 10;
+
+var beta = 0.441;
+
+//var beta = 0;
+// these are the spins
+let s;
+
+//int score = 0;
+//int tries = 0;
+
+//PFont f;
+
+// here's a function that makes a multidim array.
+function createArray(length) {
+    var arr = new Array(length || 0),
+        i = length;
+
+    if (arguments.length > 1) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        while(i--) arr[length-1 - i] = createArray.apply(this, args);
+    }
+
+    return arr;
+}
+
+
+function setup() {
+  s = createArray(L,L);
+
+  let cnv = createCanvas(500, 500);
+  //bgcolor = color(0,0,0);
+  cnv.mousePressed(userStartAudio);
+  mic = new p5.AudioIn();
+  mic.start();
+
+  //createCanvas(500,500);
+  background(0, 0, 0);
+ // s[0][0]=1;
+ // s[0][1]=1;
+ // s[1][1]=1;
+//  println(s[0][0]);
+
+  frameRate(300);
+  // initialize all spins down.
+  for (i =0; i<L; i=i+1) {
+    for (j =0; j<L; j = j+1) {
+      s[i][j]=-1;
+    }
+  }
+
+  //f = createFont("Arial",16,true);
+
+  drawLattice();
+}
+
+function draw() {
+
+  micLevel = mic.getLevel();
+  // okay, now adjust the temperature depending on the micLevel
+
+  beta = min(1/(1+100*tan(micLevel*PI/2)),beta*1.2);
+  //print(beta);
+  //print(micLevel);
+  //beta = 0;
+  //print(micLevel, beta);
+
+  // also turn off the zooming
+
+  /*
+  // see if we should be zooming in and out?
+  if ((keyPressed == true) && (key == 'A')) {
+    scale *= 1.01;
+  }
+  if ((keyPressed == true) && (key == 'S')) {
+    scale /= 1.01;
+  }
+
+  */
+  // do the Ising thing -- with some small probability flip a spin all by itself
+
+  for (i = 0; i < batch; i ++) {
+    randX = floor(random(L));
+    randY = floor(random(L));
+
+    // checking if metropolis wants to flip the spin:
+    if (checkSpin(randX,randY)==true) {
+      s[randX][randY] = -s[randX][randY];
+    //print("Flipping a spin!");
+    }
+  }
+  //drawLattice();
+  // now draw a square on the mouse
+
+
+  curr_x = gridLoc(mouseX);
+  curr_y = gridLoc(mouseY);
+
+  //print(gridLoc(100));
+
+
+  //scale(scale);
+  drawLattice();
+  if (s[curr_x][curr_y]==-1) {
+    fill(40);
+  }
+  else {
+    fill(210);
+  }
+  rect(curr_x*tile_width,curr_y*tile_width,tile_width,tile_width);
+
+  fill(255);
+
+  //circle(0,0,1000*beta);
+
+}
+
+function drawLattice() {
+
+  // draw the whole thing
+  background(0, 0, 0);
+  // now draw all the tiles.
+  fill(255);
+  for (i =0; i<L; i=i+1) {
+    for (j = 0; j<L; j=j+1) {
+
+      if (s[i][j]==1) {
+        rect(i*tile_width,j*tile_width,tile_width,tile_width);
+      }
+    }
+  }
+}
+
+
+function mousePressed() {
+
+  //tries += 1;
+
+  // figure out the location
+  curr_x = gridLoc(mouseX);
+  curr_y = gridLoc(mouseY);
+
+  // flip the spin at that location
+  print("Here");
+  s[curr_x][curr_y] = -s[curr_x][curr_y];
+  /*
+
+  // check if the spin should be flipped
+  if (checkSpin(curr_x,curr_y)==true) {
+    // should flip it
+    s[curr_x][curr_y] = -s[curr_x][curr_y];
+
+    // store it as a success
+    //score += 1;
+
+    // draw a green box
+    fill(0,255,0);
+  }
+
+  else {
+    // draw a red box!
+    fill(255,0,0);
+
+  }
+  rect(curr_x*tile_width,curr_y*tile_width,tile_width,tile_width);*/
+}
+
+// returns the lattice point associated with a mouse movement
+function gridLoc(val) {
+  //print(val);
+  //print(tile_width);
+  //print(val/tile_width);
+  //print(((val/(tile_width))));
+  return (floor((val/(tile_width)))%L);
+}
+
+function checkSpin(i, j) {
+
+  // returns true if the spin should be flipped, false otherwise.
+  deltaE = 2*(s[i][j])*(s[(i+1)%L][j]+s[(i+(L-1))%L][j]+s[i][(j+1)%L]+s[i][(j+(L-1))%L]);
+
+  //int deltaE = 0;
+  if (random(0,1)<exp(-beta*deltaE)) {
+    return true;
+  }
+  return false;
+}</script>
+
+
+
+  <center>
+    <font face = "verdana"  size = "2" color = "gray">
+    Highlight me for more info.
+    <br>
+    <font color = "black">
+      This lets you pilot a ship around a Schwarzschild black hole. (Click inside if it doesnt't respond to you.) The arrow keys fire the rocket engines. Enter resets the ship. You get one point every time you catch the orbiting moon. Everything is from the point of view
+      of a fixed outside observer, but the "heartbeat" of the ship happens once per second according to the proper time on the ship.
+      Notice the outside observer never sees anything fall into the black hole; instead the ship just freezes at the event horizon, and its heartbeat slows to a stop as its proper time ticks arbitrarily slowly with respect to the outside time.
+      </font>
+
+    <br>
+    <a href = "http://www.nabiliqbal.com">www.nabiliqbal.com</a>
+      </font>
+    </p>
+</body>
+</html>
